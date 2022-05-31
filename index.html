@@ -1,0 +1,508 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <title>Latest puppet logs: Aggregated</title>
+        <link rel="icon" href="/static/favicon.ico" sizes="any"/>
+        <link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+        <!-- external libs from cdnjs -->
+        <script type="text/javascript" src="cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.js"></script>
+        <script type="text/javascript" src="cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.js"></script>
+
+        <link rel="stylesheet" type="text/css" href="raw.githubusercontent.com/nicolaskruchten/pivottable/v2.23.0/dist/pivot.css">
+        <script type="text/javascript" src="raw.githubusercontent.com/nicolaskruchten/pivottable/v2.23.0/dist/pivot.js"></script>
+
+        <style>
+            body {
+                font-family: Verdana;
+                margin: 0;
+            }
+            .pvtAttr, .pvtAggregator { font-size: xx-small; }
+            .error { background-color: #fbb; }
+            .error::before { content: " 🆖 "; }
+            .active { background-color: #ffc; }
+            .active::before { content: " ⏳ "; }
+            .ready { background-color: #cfc; }
+            .ready::before { content: " 🆗 "; }
+            #header {
+                padding: 1em;
+                background-color: #eee;
+            }
+            #body {
+                margin: 1em;
+            }
+            .header_container {
+                display: inline;
+                border-width: 1px 1px 1pt 1px;
+                border-color: black;
+                border-style: solid;
+                padding: 1ex 1ex 1ex 1ex;
+            }
+            #configuration_container { background-color: #eee; }
+            #file_container { background-color: #ccc; }
+            #custom_configuration_content {
+                width: 100%;
+                height: 50em;
+                font-size: x-small;
+            }
+            #bookmark {
+                text-decoration: none;
+            }
+            #bookmark > div {
+                background-color:wheat;
+            }
+            #current_file {
+                font-family: monospace;
+                font-weight: bold;
+                padding: 0.5ex 1em 0.5ex 1em;
+                text-decoration: none;
+            }
+            table.pvtTable thead tr:nth-child(odd) th, table.pvtTable tbody tr:nth-child(odd) th, table.pvtTable tbody tr:nth-child(odd) td {
+                background-color: #eee;
+            }
+            table.pvtTable thead tr:nth-child(even) th, table.pvtTable tbody tr:nth-child(even) th, table.pvtTable tbody tr:nth-child(even) td {
+                background-color: #ddd;
+            }
+        </style>
+
+    </head>
+    <body>
+        <div id="header">
+        <a href="#" id="bookmark" title="Copy this link to bookmark this configuration."><div class="header_container">🔖</span></div></a><!--
+        --><div class="header_container">
+        <select id="configuration" title="Pre-defined table configurations."></select>
+        <input id="filter_prod" type="button" value="Prod" title="Filter only the production environments" />
+        <input id="filter_age" type="button" value="24h" title="Filter only the age=0" />
+        <input id="filter_changes" type="button" value="Changes" title="Filter only the changes!=0" />
+        </div>
+        <div class="header_container" id="file_container">
+        <span><a title="The currently loaded file. Only the 'latest' one is regularly updated." id='current_file'>...</a></span>
+        <input id="latest" type="button" value="🆕" title="Load (or reload) the most recent report." />
+        <input id="last_day" type="button" value="➖" title="Go to the previous day" /><!--
+        --><input id="date_selector" type="date" title="Load the latest report for a different day" /><!--
+        --><input id="next_day" type="button" value="➕" title="Go to the next day" />
+        </div>
+        <div class="header_container">
+        <input id="rotate_button" type="button" value="🔃" title="Switch the location of the unused attributes" />
+        </div>
+        </div>
+        <div id="body">
+        <hr />
+        <div id="output"></div>
+        <hr />
+        <p>
+        <a href="https://github.com/nicolaskruchten/pivottable/wiki/Parameters#options-object-for-pivotui">Configuration documentation</a>
+        </p>
+        <p id="custom_configuration_container">
+        <input id="custom_configuration_button" type="button" value="Apply custom configuration" />
+        <textarea id="custom_configuration_content" spellcheck="false" >{}</textarea>
+        </p>
+        <script type="text/javascript">
+    
+    $(function(){
+
+        report_date = null;
+        today_string = null;
+        yesterday_string = null;
+
+        changeDate = function(offset) {
+            // Operate in local time, even though all calls assume UTC
+            today = new Date();
+            today = new Date(today.getTime() - today.getTimezoneOffset() * 60 * 1000);
+            today_string = today.toISOString().slice(0, 10);
+
+            yesterday = new Date(today.getTime());
+            yesterday.setDate(yesterday.getDate() - 1);
+            yesterday_string = yesterday.toISOString().slice(0, 10);
+
+            if (offset == null) {
+                report_date = null;
+                $("#date_selector")[0].value = null
+            } else {
+                if (report_date == null) {
+                    report_date = new Date(today.getTime());
+                }
+                report_date.setDate(report_date.getDate() + offset);
+                $("#date_selector")[0].value = report_date.toISOString().slice(0, 10);
+            }
+        }
+
+        changeDate();
+
+        owner_to_roles = {
+            "Team 1": [
+                "role1",
+                "role2",
+                "prefix:role3",
+            ],
+            "Team 2": [
+                "role3",
+                "role4",
+                "prefix:*",
+            ],
+        }
+
+        role_to_owner = {}
+
+        for (const[owner, roles] of Object.entries(owner_to_roles)) {
+            for (const role of roles) {
+                role_to_owner[role] = owner;
+            }
+        }
+
+        permanentConfig = {
+            autoSortUnusedAttrs: true,
+            derivedAttributes: {
+                /*
+                Several host styles, but the logic is:
+                - If there is only dash in the name, the "before" is the
+                  "puppet_prefix" which kind of translates to a separate puppet
+                  repo, and the remainder is what we will have to keep looking at.
+                - Looking at the part without the puppet_prefix (or the whole name) we have:
+                - host_prefix which is up to the first number (or up to the
+                  last dash for the multi-dash separator hostname style)
+                - host_role which is after the host_prefix and up to a number
+                - host_index which is the last digits
+                */
+                "host_puppet_prefix": function(record) {
+                    var match = record.hostname.match(/^([^-]+-)([^-]+)$/); // puppet_prefix is only if we have a single dash
+                    if (match) {
+                        return match[1];
+                    } else {
+                        return "";
+                    }
+                },
+                "host_puppet_suffix": function(record) {
+                    var match = record.hostname.match(/^([^-]+-)([^-]+)$/); // puppet_prefix is only if we have a single dash
+                    if (match) {
+                        return match[2];
+                    } else {
+                        return record.hostname;
+                    }
+                },
+                "host_prefix": function(record) {
+                    let result = null;
+                    if (result = record.host_puppet_suffix.match(/^(.+)-([^0-9]+)([0-9]+)$/)) {
+                        return result[1];
+                    } else if (result = record.host_puppet_suffix.match(/^(.+?[0-9])([^0-9]+)([0-9]+)/)) {
+                        return result[1];
+                    }
+                    return result;
+                },
+                "host_role": function(record) {
+                    let result = null;
+                    if (result = record.host_puppet_suffix.match(/^(.+)-([^0-9]+)([0-9]+)$/)) {
+                        return result[2];
+                    } else if (result = record.host_puppet_suffix.match(/^(.+?[0-9])([^0-9]+)([0-9]+)/)) {
+                        return result[2];
+                    }
+                    return result;
+                },
+                "host_index": function(record) {
+                    let result = null;
+                    if (result = record.host_puppet_suffix.match(/^(.+)-([^0-9]+)([0-9]+)$/)) {
+                        return result[3];
+                    } else if (result = record.host_puppet_suffix.match(/^(.+?[0-9])([^0-9]+)([0-9]+)/)) {
+                        return result[3];
+                    }
+                    return result;
+                },
+                "host_owner": function(record) {
+                    return role_to_owner[ `${record.host_puppet_prefix}${record.host_prefix}:${record.host_role}` ] || role_to_owner[ `${record.host_puppet_prefix}${record.host_prefix}:*` ] || role_to_owner[record.host_role] || "";
+                },
+            },
+            onRefresh: function(current_config) {
+                var saved_config = JSON.parse(JSON.stringify(current_config));
+                //delete some values which are functions
+                delete saved_config["aggregators"];
+                delete saved_config["renderers"];
+                //delete some bulky default values
+                delete saved_config["rendererOptions"];
+                delete saved_config["localeStrings"];
+                delete saved_config["inclusionsInfo"];
+                //delete attributes we do not customize
+                delete saved_config["derivedAttributes"];
+                delete saved_config["hiddenAttributes"];
+                delete saved_config["hiddenFromAggregators"];
+                delete saved_config["hiddenFromDragDrop"];
+                delete saved_config["sorters"];
+                delete saved_config["showUI"];
+                delete saved_config["autoSortUnusedAttrs"];
+                for (var key of Object.keys(current_config.inclusions))
+                {
+                    if (current_config.inclusions[key].length < current_config.exclusions[key].length)
+                    {
+                        delete saved_config["exclusions"][key];
+                    } else {
+                        delete saved_config["inclusions"][key];
+                    }
+                }
+
+                customConfig = saved_config;
+                syncConfigs();
+            },
+        }
+
+        defaultConfig = {
+            cols: [ "resource_type" ],
+            rows: [
+                "age",
+                "date",
+                "environment",
+                "host_prefix",
+                "host_role",
+                "host_index",
+                "hostname",
+            ],
+            inclusions: { },
+            exclusions: { },
+            rowOrder: "value_z_to_a",
+            colOrder: "value_z_to_a",
+            rendererName: "Heatmap",
+            unusedAttrsVertical: true,
+            menuLimit: 5000,
+        }
+
+        customConfig = {};
+
+        liveConfig = function() {
+            return Object.assign({}, defaultConfig, customConfig, permanentConfig);
+        };
+
+        configTemplates = [];
+
+        configTemplates.push(["⬇️ Choose a template to load ⬇️", {}]);
+        configTemplates.push([ "", {}]);
+        configTemplates.push(["Default", {}]);
+        configTemplates.push([ "", {}]);
+
+        configTemplates.push([">> Filtered by team <<", {}]);
+
+        for (const[owner, roles] of Object.entries(owner_to_roles)) {
+            configTemplates.push( [`Team - ${owner}`, {
+                inclusions: {
+                    host_owner: [ owner ],
+                },
+                cols: [
+                    "environment",
+                ],
+                rows: [
+                    "age",
+                    "date",
+                    "host_owner",
+                    "host_role",
+                ],
+                vals: [ "changes", ],
+                aggregatorName: "Integer Sum",
+            }]);
+        }
+
+        configTemplates.push([ "", {}]);
+
+        configTemplates.push(["SSH keys per host prefix", {
+            rows: [ "host_prefix" ],
+            cols: [ "resource_type", "property", "new_value", ],
+            rowOrder: "value_z_to_a",
+            inclusions: { "resource_type": [ "Sshkey" ], "environment": [ "production", "cloud_production", "jgb_production" ], "property": [ "ensure" ] },
+            aggregatorName: "Count Unique Values",
+            vals: [ "hostname" ],
+
+        }]);
+        configTemplates.push(["Resource types per host", {
+                cols: [ "resource_type" ],
+                rows: [ "age", "date", "hostname", "environment" ],
+                rowOrder: "key_a_to_z",
+        }]);
+
+        configTemplates.push(["Changes per team", {
+            "cols": [
+                "environment",
+            ],
+            "rows": [
+                "age",
+                "date",
+                "host_owner",
+            ],
+            "vals": [ "changes", ],
+            "rowOrder": "key_a_to_z",
+            "colOrder": "key_a_to_z",
+            "inclusions": {},
+            "rendererName": "Heatmap",
+            "aggregatorName": "Integer Sum"
+        }]);
+
+        Object.assign(defaultConfig, configTemplates[configTemplates.length - 1][1]);
+
+        configTemplates.push(["Unreported hosts", {
+            "cols": [],
+            "rows": [
+                "age",
+                "date",
+                "host_owner",
+                "environment",
+                "host_prefix",
+                "host_role",
+                "host_index",
+            ],
+            "vals": [
+                "hostname",
+            ],
+            "inclusions": {},
+            "exclusions": {
+                "age": [
+                    "0",
+                ],
+            },
+            "rowOrder": "key_a_to_z",
+            "colOrder": "key_a_to_z",
+            "aggregatorName": "Count Unique Values",
+        }]);
+
+        syncConfigs = function() {
+            $("#bookmark")[0].href = "#" + encodeURIComponent(JSON.stringify(liveConfig()));
+            document.location.hash = "#" + encodeURIComponent(JSON.stringify(liveConfig()));
+            $("#custom_configuration_content")[0].value = JSON.stringify(liveConfig(), undefined, 2);
+            $("#custom_configuration_container, #current_file").each(function () {
+                this.classList.remove("active");
+                this.classList.remove("error");
+                this.classList.add("ready");
+            });
+        }
+
+        loadBookmarkedConfig = function() {
+            if ( $(location).attr('hash').length > 1 )
+            {
+                try {
+                    customConfig = JSON.parse(decodeURIComponent($(location).attr('hash').slice(1)));
+                } catch (error) {
+                    if (error instanceof SyntaxError) {
+                        console.log(error);
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        }
+
+        loadBookmarkedConfig();
+
+        for (const [key, value] of configTemplates) {
+            var option = document.createElement('option');
+            option.value = key;
+            option.innerText = key;
+            $("#configuration")[0].appendChild(option);
+        }
+
+        pvt_data = []
+
+        renderTable = function() {
+            $("#output").pivotUI(pvt_data, liveConfig(), true );
+        };
+
+        loadFile = function() {
+            report_suffix = "latest"
+            if (report_date != null) {
+                report_suffix = report_date.toISOString().slice(0,10);
+            }
+
+            datafile = `puppetlogs-${report_suffix}.json`;
+            $("#current_file")[0].innerText = report_suffix;
+            $("#current_file")[0].href = `.data/${datafile}`;
+            $("#current_file").each( function() {
+                this.classList.remove("ready");
+                this.classList.remove("error");
+                this.classList.add("active");
+            });
+            $.getJSON(`.data/${datafile}?ts=${Math.floor(Date.now() / 600_000)}`, function(loaded_data) {
+                pvt_data = loaded_data;
+                renderTable();
+            })
+            .fail( function() {
+                $("#current_file").each( function() {
+                    this.classList.remove("ready");
+                    this.classList.remove("active");
+                    this.classList.add("error");
+                });
+            })
+            ;
+        }
+
+        $("#rotate_button").on("click", function() {
+            customConfig.unusedAttrsVertical = ! liveConfig().unusedAttrsVertical
+            renderTable();
+        });
+
+        $("#configuration").on("change", function() {
+            if ($("#configuration")[0].selectedIndex != 0)
+            {
+                customConfig = configTemplates[$("#configuration")[0].selectedIndex][1];
+                $("#configuration")[0].selectedIndex = 0;
+                renderTable();
+            }
+        });
+
+        $("#next_day").on("click", function() {
+            changeDate(1);
+            loadFile();
+        });
+        $("#last_day").on("click", function() {
+            changeDate(-1);
+            loadFile();
+        });
+        $("#latest").on("click", function() {
+            changeDate();
+            loadFile();
+        });
+        $("#filter_prod").on("click", function() {
+            var environments = {};
+            pvt_data.forEach( (o) => { environments[o.environment] = 1; });
+            delete customConfig.exclusions.environment;
+            customConfig.inclusions.environment = [];
+            Object.keys(environments).forEach( (e) => {
+                e.match(/production$/) && customConfig.inclusions.environment.push(e);
+            });
+            renderTable();
+        });
+        $("#filter_age").on("click", function() {
+            delete customConfig.exclusions.age;
+            customConfig.inclusions.age = [ "0" ];
+            renderTable();
+        });
+        $("#filter_changes").on("click", function() {
+            delete customConfig.inclusions.changes;
+            customConfig.exclusions.changes = [ "0" ];
+            renderTable();
+        });
+        $("#date_selector").on("change", function() {
+            report_date = new Date(Date.parse(this.value));
+            changeDate(0);
+            loadFile();
+        });
+
+        $("#custom_configuration_button").on("click", function() {
+            try {
+                $("#custom_configuration_container").each( function() {
+                    this.classList.remove("ready");
+                    this.classList.remove("error");
+                    this.classList.add("active");
+                });
+                customConfig = JSON.parse($("#custom_configuration_content")[0].value);
+                renderTable();
+            } catch (error) {
+                $("#custom_configuration_container").each( function() {
+                    this.classList.remove("ready");
+                    this.classList.remove("active");
+                    this.classList.add("error");
+                });
+            }
+        });
+
+        loadFile();
+
+    });
+        </script>
+        </div>
+    </body>
+</html>
+<!--
+    vim:sw=4:et:
+-->
