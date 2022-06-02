@@ -5,38 +5,33 @@
 
 $(function(){
 
-    report_date = null;
-    today_string = null;
-    yesterday_string = null;
+    reportDate = null;
+    todayString = null;
 
     changeDate = function(offset) {
         // Operate in local time, even though all calls assume UTC
         today = new Date();
         today = new Date(today.getTime() - today.getTimezoneOffset() * 60 * 1000);
-        today_string = today.toISOString().slice(0, 10);
-
-        yesterday = new Date(today.getTime());
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday_string = yesterday.toISOString().slice(0, 10);
+        todayString = today.toISOString().slice(0, 10);
 
         if (offset == null) {
-            report_date = null;
+            reportDate = null;
             $("#date_selector")[0].value = null
         } else {
-            if (report_date == null) {
-                report_date = new Date(today.getTime());
+            if (reportDate == null) {
+                reportDate = new Date(today.getTime());
             }
-            report_date.setDate(report_date.getDate() + offset);
-            $("#date_selector")[0].value = report_date.toISOString().slice(0, 10);
+            reportDate.setDate(reportDate.getDate() + offset);
+            $("#date_selector")[0].value = reportDate.toISOString().slice(0, 10);
         }
     }
 
     changeDate();
 
     // Overridable in puppetlogs.local.js
-    if (typeof(owner_to_roles) == 'undefined')
+    if (typeof(ownerToRoles) == 'undefined')
     {
-        owner_to_roles = {
+        ownerToRoles = {
             "Team 1": [
                 "role1",
                 "role2",
@@ -50,17 +45,17 @@ $(function(){
         }
     }
 
-    role_to_owner = {}
+    roleToOwner = {}
 
-    for (const[owner, roles] of Object.entries(owner_to_roles)) {
+    for (const[owner, roles] of Object.entries(ownerToRoles)) {
         for (const role of roles) {
-            role_to_owner[role] = owner;
+            roleToOwner[role] = owner;
         }
     }
 
-    for (const[owner, roles] of Object.entries(owner_to_roles)) {
+    for (const[owner, roles] of Object.entries(ownerToRoles)) {
         for (const role of roles) {
-            role_to_owner[role] = owner;
+            roleToOwner[role] = owner;
         }
     }
 
@@ -97,39 +92,39 @@ $(function(){
                 return result;
             },
             "host_owner": function(record) {
-                return role_to_owner[ `${record.host_prefix}:${record.host_role}` ] || role_to_owner[ `${record.host_prefix}:*` ] || role_to_owner[record.host_role] || "";
+                return roleToOwner[ `${record.host_prefix}:${record.host_role}` ] || roleToOwner[ `${record.host_prefix}:*` ] || roleToOwner[record.host_role] || "";
             },
         }
     }
 
-    permanentConfig.onRefresh = function(current_config) {
-        var saved_config = JSON.parse(JSON.stringify(current_config));
+    permanentConfig.onRefresh = function(currentConfig) {
+        var savedConfig = JSON.parse(JSON.stringify(currentConfig));
         //delete some values which are functions
-        delete saved_config["aggregators"];
-        delete saved_config["renderers"];
+        delete savedConfig["aggregators"];
+        delete savedConfig["renderers"];
         //delete some bulky default values
-        delete saved_config["rendererOptions"];
-        delete saved_config["localeStrings"];
-        delete saved_config["inclusionsInfo"];
+        delete savedConfig["rendererOptions"];
+        delete savedConfig["localeStrings"];
+        delete savedConfig["inclusionsInfo"];
         //delete attributes we do not customize
-        delete saved_config["derivedAttributes"];
-        delete saved_config["hiddenAttributes"];
-        delete saved_config["hiddenFromAggregators"];
-        delete saved_config["hiddenFromDragDrop"];
-        delete saved_config["sorters"];
-        delete saved_config["showUI"];
-        delete saved_config["autoSortUnusedAttrs"];
-        for (var key of Object.keys(current_config.inclusions))
+        delete savedConfig["derivedAttributes"];
+        delete savedConfig["hiddenAttributes"];
+        delete savedConfig["hiddenFromAggregators"];
+        delete savedConfig["hiddenFromDragDrop"];
+        delete savedConfig["sorters"];
+        delete savedConfig["showUI"];
+        delete savedConfig["autoSortUnusedAttrs"];
+        for (var key of Object.keys(currentConfig.inclusions))
         {
-            if (current_config.inclusions[key].length < current_config.exclusions[key].length)
+            if (currentConfig.inclusions[key].length < currentConfig.exclusions[key].length)
             {
-                delete saved_config["exclusions"][key];
+                delete savedConfig["exclusions"][key];
             } else {
-                delete saved_config["inclusions"][key];
+                delete savedConfig["inclusions"][key];
             }
         }
 
-        customConfig = saved_config;
+        customConfig = savedConfig;
         syncConfigs();
     }
 
@@ -175,7 +170,7 @@ $(function(){
 
         configTemplates.push([">> Filtered by team <<", {}]);
 
-        for (const[owner, roles] of Object.entries(owner_to_roles)) {
+        for (const[owner, roles] of Object.entries(ownerToRoles)) {
             configTemplates.push( [`Team - ${owner}`, {
                 inclusions: {
                     host_owner: [ owner ],
@@ -299,8 +294,8 @@ $(function(){
 
     loadFile = function() {
         report_suffix = "latest"
-        if (report_date != null) {
-            report_suffix = report_date.toISOString().slice(0,10);
+        if (reportDate != null) {
+            report_suffix = reportDate.toISOString().slice(0,10);
         }
 
         datafile = `puppetlogs-${report_suffix}.json`;
@@ -372,7 +367,7 @@ $(function(){
         renderTable();
     });
     $("#date_selector").on("change", function() {
-        report_date = new Date(Date.parse(this.value));
+        reportDate = new Date(Date.parse(this.value));
         changeDate(0);
         loadFile();
     });
