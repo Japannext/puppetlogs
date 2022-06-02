@@ -10,7 +10,7 @@ Prerequisites
 -------------
 
 - Any web server to host the page
-- Access to a PuppetDB instance to get the code from
+- Access to a PuppetDB instance to get the reports from
 - The following utilities available in `$PATH`:
   - `jq`
   - `pv`
