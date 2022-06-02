@@ -68,6 +68,38 @@ $(function(){
     if (typeof(permanentConfig) == 'undefined')
     {
         permanentConfig = {}
+        // Example of how to set meaningful derived attributes. This
+        // demonstrates what you could do if your hosts are using a naming
+        // convention of <prefix>-<role><number>
+        permanentConfig.derivedAttributes = {
+            "host_prefix": function(record) {
+                let result = null;
+                if (result = record.hostname.match(/^([^-]+)-([^-]+)(\d+)/))
+                {
+                    return result[1];
+                }
+                return result;
+            },
+            "host_role": function(record) {
+                let result = null;
+                if (result = record.hostname.match(/^([^-]+)-([^-]+)(\d+)/))
+                {
+                    return result[2];
+                }
+                return result;
+            },
+            "host_index": function(record) {
+                let result = null;
+                if (result = record.hostname.match(/^([^-]+)-([^-]+)(\d+)/))
+                {
+                    return result[3];
+                }
+                return result;
+            },
+            "host_owner": function(record) {
+                return role_to_owner[ `${record.host_prefix}:${record.host_role}` ] || role_to_owner[ `${record.host_prefix}:*` ] || role_to_owner[record.host_role] || "";
+            },
+        }
     }
 
     permanentConfig.onRefresh = function(current_config) {
