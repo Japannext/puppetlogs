@@ -272,7 +272,8 @@ $(function(){
             },
             "rowOrder": "key_a_to_z",
             "colOrder": "key_a_to_z",
-            "aggregatorName": "Count",
+            "aggregatorName": "List Unique Values",
+            "vals": [ "run_status", ],
         }]);
     }
 
