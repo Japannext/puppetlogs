@@ -27,6 +27,7 @@ curl -s -X GET ${url}/pdb/query/v4/reports --data-urlencode 'include_total=false
 			| ( {
 				certname: $certname,
 				hostname: $hostname,
+				run_status: .status,
 				environment: $environment,
 				date: $date,
 				age: $age,

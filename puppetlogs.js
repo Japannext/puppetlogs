@@ -249,6 +249,31 @@ $(function(){
             "colOrder": "key_a_to_z",
             "aggregatorName": "Count Unique Values",
         }]);
+        configTemplates.push(["Failed runs", {
+            "cols": [
+                "environment",
+            ],
+            "rows": [
+                "age",
+                "date",
+                "host_owner",
+                "host_prefix",
+                "host_role",
+                "host_index",
+                "hostname",
+            ],
+            "inclusions": {
+                "run_status": [
+                    "failed",
+                ],
+                "age": [
+                    "0",
+                ],
+            },
+            "rowOrder": "key_a_to_z",
+            "colOrder": "key_a_to_z",
+            "aggregatorName": "Count",
+        }]);
     }
 
     syncConfigs = function() {
