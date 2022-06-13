@@ -194,7 +194,8 @@ $(function(){
         configTemplates.push(["Resource types per host", {
                 cols: [ "resource_type" ],
                 rows: [ "age", "date", "hostname", "environment" ],
-                rowOrder: "key_a_to_z",
+                colOrder: "value_z_to_a",
+                rowOrder: "value_z_to_a",
         }]);
 
         configTemplates.push(["Changes per team", {
