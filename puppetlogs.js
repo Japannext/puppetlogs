@@ -249,7 +249,7 @@ $(function(){
             "colOrder": "key_a_to_z",
             "aggregatorName": "Count Unique Values",
         }]);
-        configTemplates.push(["Failed runs", {
+        configTemplates.push(["Failed resources", {
             "cols": [
                 "environment",
             ],
@@ -257,14 +257,14 @@ $(function(){
                 "age",
                 "date",
                 "host_owner",
-                "host_prefix",
+                "resource_type",
+                "resource_title",
                 "host_role",
-                "host_index",
-                "hostname",
+                "host_prefix",
             ],
             "inclusions": {
-                "run_status": [
-                    "failed",
+                "status": [
+                    "failure",
                 ],
                 "age": [
                     "0",
@@ -272,8 +272,8 @@ $(function(){
             },
             "rowOrder": "key_a_to_z",
             "colOrder": "key_a_to_z",
-            "aggregatorName": "List Unique Values",
-            "vals": [ "run_status", ],
+            "aggregatorName": "Integer Sum",
+            "vals": [ "changes", ],
         }]);
     }
 
