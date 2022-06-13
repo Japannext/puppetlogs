@@ -191,15 +191,6 @@ $(function(){
 
         configTemplates.push([ "", {}]);
 
-        configTemplates.push(["SSH keys per host prefix", {
-            rows: [ "host_prefix" ],
-            cols: [ "resource_type", "property", "new_value", ],
-            rowOrder: "value_z_to_a",
-            inclusions: { "resource_type": [ "Sshkey" ], "environment": [ "production", "cloud_production", "jgb_production" ], "property": [ "ensure" ] },
-            aggregatorName: "Count Unique Values",
-            vals: [ "hostname" ],
-
-        }]);
         configTemplates.push(["Resource types per host", {
                 cols: [ "resource_type" ],
                 rows: [ "age", "date", "hostname", "environment" ],
