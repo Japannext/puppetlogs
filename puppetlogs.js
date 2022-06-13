@@ -164,59 +164,7 @@ $(function(){
         configTemplates = [];
 
         configTemplates.push(["⬇️ Choose a template to load ⬇️", {}]);
-        configTemplates.push([ "", {}]);
-        configTemplates.push(["Default", {}]);
-        configTemplates.push([ "", {}]);
-
-        configTemplates.push([">> Filtered by team <<", {}]);
-
-        for (const[owner, roles] of Object.entries(ownerToRoles)) {
-            configTemplates.push( [`Team - ${owner}`, {
-                inclusions: {
-                    host_owner: [ owner ],
-                },
-                cols: [
-                    "environment",
-                ],
-                rows: [
-                    "age",
-                    "date",
-                    "host_owner",
-                    "host_role",
-                ],
-                vals: [ "changes", ],
-                aggregatorName: "Integer Sum",
-            }]);
-        }
-
-        configTemplates.push([ "", {}]);
-
-        configTemplates.push(["Resource types per host", {
-                cols: [ "resource_type" ],
-                rows: [ "age", "date", "hostname", "environment" ],
-                colOrder: "value_z_to_a",
-                rowOrder: "value_z_to_a",
-        }]);
-
-        configTemplates.push(["Changes per team", {
-            "cols": [
-                "environment",
-            ],
-            "rows": [
-                "age",
-                "date",
-                "host_owner",
-            ],
-            "vals": [ "changes", ],
-            "rowOrder": "key_a_to_z",
-            "colOrder": "key_a_to_z",
-            "inclusions": {},
-            "rendererName": "Heatmap",
-            "aggregatorName": "Integer Sum"
-        }]);
-
-        Object.assign(defaultConfig, configTemplates[configTemplates.length - 1][1]);
-
+        configTemplates.push(["Reset to defaults", {}]);
         configTemplates.push(["Unreported hosts", {
             "cols": [],
             "rows": [
@@ -267,6 +215,53 @@ $(function(){
             "aggregatorName": "Integer Sum",
             "vals": [ "changes", ],
         }]);
+
+        configTemplates.push(["Owner: (Summarized)", {
+            "cols": [
+                "environment",
+            ],
+            "rows": [
+                "age",
+                "date",
+                "host_owner",
+            ],
+            "vals": [ "changes", ],
+            "rowOrder": "key_a_to_z",
+            "colOrder": "key_a_to_z",
+            "inclusions": {},
+            "rendererName": "Heatmap",
+            "aggregatorName": "Integer Sum"
+        }]);
+
+        for (const[owner, roles] of Object.entries(ownerToRoles)) {
+            configTemplates.push( [`Owner: ${owner}`, {
+                inclusions: {
+                    host_owner: [ owner ],
+                },
+                cols: [
+                    "environment",
+                ],
+                rows: [
+                    "age",
+                    "date",
+                    "host_owner",
+                    "host_role",
+                ],
+                vals: [ "changes", ],
+                aggregatorName: "Integer Sum",
+            }]);
+        }
+
+        configTemplates.push(["Resource types per host", {
+                cols: [ "resource_type" ],
+                rows: [ "age", "date", "hostname", "environment" ],
+                colOrder: "value_z_to_a",
+                rowOrder: "value_z_to_a",
+        }]);
+
+
+        Object.assign(defaultConfig, configTemplates[configTemplates.length - 1][1]);
+
     }
 
     syncConfigs = function() {
