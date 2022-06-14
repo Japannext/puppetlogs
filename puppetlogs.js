@@ -189,6 +189,26 @@ $(function(){
             "colOrder": "key_a_to_z",
             "aggregatorName": "Count Unique Values",
         }]);
+        configTemplates.push(["Failed hosts", {
+            "cols": [
+                "environment",
+            ],
+            "rows": [
+                "age",
+                "date",
+                "host_owner",
+                "hostname",
+            ],
+            "inclusions": {
+                "run_status": [
+                    "failed",
+                ],
+            },
+            "rowOrder": "key_a_to_z",
+            "colOrder": "key_a_to_z",
+            "aggregatorName": "List Unique Values",
+            "vals": [ "run_status", ],
+        }]);
         configTemplates.push(["Failed resources", {
             "cols": [
                 "environment",
