@@ -2,6 +2,7 @@
 
 set -eux -o pipefail
 
+[[ -d "${0%/*}"/.data ]] || mkdir "${0%/*}"/.data ]]
 cd "${0%/*}"/.data
 now=$(date -Is)
 symlink=puppetlogs-${now%T*}.json
