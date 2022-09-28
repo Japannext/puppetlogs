@@ -280,8 +280,6 @@ $(function(){
         }]);
 
 
-        Object.assign(defaultConfig, configTemplates[configTemplates.length - 1][1]);
-
     }
 
     syncConfigs = function() {
