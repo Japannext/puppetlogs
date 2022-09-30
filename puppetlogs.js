@@ -13,6 +13,13 @@ splitEnvironment = (environment) => {
     }
     return o;
 }
+
+filterBranch = (branches) => {
+    delete customConfig.exclusions.host_branch;
+    customConfig.inclusions.host_branch = branches;
+    renderTable();
+}
+
 $(function(){
 
     reportDate = null;
@@ -393,16 +400,10 @@ $(function(){
         changeDate();
         loadFile();
     });
-    $("#filter_prod").on("click", function() {
-        var environments = {};
-        pvt_data.forEach( (o) => { environments[o.environment] = 1; });
-        delete customConfig.exclusions.environment;
-        customConfig.inclusions.environment = [];
-        Object.keys(environments).forEach( (e) => {
-            e.match(/production$/) && customConfig.inclusions.environment.push(e);
-        });
-        renderTable();
-    });
+    $("#filter_prod").on("click", function() { filterBranch( [ 'production'] ) });
+    $("#filter_test").on("click", function() { filterBranch( [ 'testing' ]) });
+    $("#filter_dev").on("click", function() { filterBranch( [ 'development' ]) });
+    $("#filter_official").on("click", function() { filterBranch( [ 'development', 'testing', 'production' ]) });
     $("#filter_age").on("click", function() {
         delete customConfig.exclusions.age;
         customConfig.inclusions.age = [ "0" ];
