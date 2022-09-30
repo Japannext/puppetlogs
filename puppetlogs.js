@@ -3,6 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
+splitEnvironment = (environment) => {
+    var match = undefined
+    var o = { repo: '', branch: environment }
+    match = environment.match(/^(?:(?<repo>[^_]+)_)?(?<branch>.+)$/)
+    if (match) {
+        o.repo = match.groups.repo || '';
+        o.branch = match.groups.branch;
+    }
+    return o;
+}
 $(function(){
 
     reportDate = null;
@@ -67,6 +77,12 @@ $(function(){
         // demonstrates what you could do if your hosts are using a naming
         // convention of <prefix>-<role><number>
         permanentConfig.derivedAttributes = {
+            "host_repo": function(record) {
+                return splitEnvironment(record.environment).repo
+            },
+            "host_branch": function(record) {
+                return splitEnvironment(record.environment).branch
+            },
             "host_prefix": function(record) {
                 let result = null;
                 if (result = record.hostname.match(/^([^-]+)-([^-]+)(\d+)/))
