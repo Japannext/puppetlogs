@@ -159,7 +159,8 @@ $(function(){
             rows: [
                 "age",
                 "date",
-                "environment",
+                "host_repo",
+                "host_branch",
                 "host_prefix",
                 "host_role",
                 "host_index",
@@ -194,7 +195,8 @@ $(function(){
                 "age",
                 "date",
                 "host_owner",
-                "environment",
+                "host_branch",
+                "host_repo",
                 "host_prefix",
                 "host_role",
                 "host_index",
@@ -214,7 +216,8 @@ $(function(){
         }]);
         configTemplates.push(["Failed hosts", {
             "cols": [
-                "environment",
+                "host_branch",
+                "host_repo",
             ],
             "rows": [
                 "age",
@@ -234,7 +237,8 @@ $(function(){
         }]);
         configTemplates.push(["Failed resources", {
             "cols": [
-                "environment",
+                "host_branch",
+                "host_repo",
             ],
             "rows": [
                 "age",
@@ -261,7 +265,8 @@ $(function(){
 
         configTemplates.push(["Owner: (Summarized)", {
             "cols": [
-                "environment",
+                "host_branch",
+                "host_repo",
             ],
             "rows": [
                 "age",
@@ -282,7 +287,8 @@ $(function(){
                     host_owner: [ owner ],
                 },
                 cols: [
-                    "environment",
+                    "host_branch",
+                    "host_repo",
                 ],
                 rows: [
                     "age",
@@ -297,7 +303,7 @@ $(function(){
 
         configTemplates.push(["Resource types per host", {
                 cols: [ "resource_type" ],
-                rows: [ "age", "date", "hostname", "environment" ],
+                rows: [ "age", "date", "hostname", "host_branch", "host_repo" ],
                 colOrder: "value_z_to_a",
                 rowOrder: "value_z_to_a",
         }]);
