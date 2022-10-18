@@ -400,7 +400,7 @@
       return {
         "Count": tpl.count(usFmtInt),
         "Count Unique Values": tpl.countUnique(usFmtInt),
-        "List Unique Values": tpl.listUnique(", "),
+        "List Unique Values": tpl.listUnique(" "),
         "Sum": tpl.sum(usFmt),
         "Integer Sum": tpl.sum(usFmtInt),
         "Average": tpl.average(usFmt),
