@@ -1351,7 +1351,7 @@
           if (values.length > opts.menuLimit) {
             valueList.append($("<p>").html(opts.localeStrings.tooMany));
           } else {
-            if (values.length > 5) {
+            if (values.length > 0) {
               controls = $("<p>").appendTo(valueList);
               sorter = getSort(opts.sorters, attr);
               placeholder = opts.localeStrings.filterResults;
