@@ -39,7 +39,7 @@ curl -s -X GET ${url}/pdb/query/v4/reports --data-urlencode 'include_total=false
 			| .resource_events
 			| select(.data)
 			| .data[]
-			| del(.containment_path, .timestamp, .message, .corrective_change, .new_value, .old_value)
+			| del(.timestamp, .message, .corrective_change, .new_value, .old_value)
 			| {
 				certname: $certname,
 				hostname: $hostname,
