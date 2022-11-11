@@ -2,7 +2,7 @@
 
 set -eux -o pipefail
 
-[[ -d "${0%/*}"/.data ]] || mkdir "${0%/*}"/.data ]]
+[[ -d "${0%/*}"/.data ]] || mkdir "${0%/*}"/.data
 cd "${0%/*}"/.data
 now=$(date -Is)
 symlink=puppetlogs-${now%T*}.json
@@ -10,11 +10,11 @@ latest_symlink=puppetlogs-latest.json
 old_file=$(readlink "${symlink}" || echo "")
 
 new_file=puppetlogs-${now}.json
-: ${url:=http://localhost:8080}
+: "${url:=http://localhost:8080}"
 
 [[ -f $new_file ]] && exit 1
 
-curl -s -X GET ${url}/pdb/query/v4/reports --data-urlencode 'include_total=false' --data-urlencode 'query=["=","latest_report?",true]' \
+curl -s -X GET "${url}"/pdb/query/v4/reports --data-urlencode 'include_total=false' --data-urlencode 'query=["=","latest_report?",true]' \
 	| pv -N downloaded \
 	| jq '[
 		.[]
@@ -56,7 +56,7 @@ curl -s -X GET ${url}/pdb/query/v4/reports --data-urlencode 'include_total=false
 
 ln -sfnv "${new_file}" "${symlink}"
 ln -sfnv "${new_file}" "${latest_symlink}"
-ls -gG ${old_file} "${new_file}" "${symlink}" "${latest_symlink}"
+ls -gG "${old_file}" "${new_file}" "${symlink}" "${latest_symlink}"
 rm -fv "${old_file}"
 
 tmpwatch --mtime $((45*24)) ./
