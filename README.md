@@ -22,7 +22,7 @@ Prerequisites
 How to use
 ----------
 
-1. Prepare the data to be visualized. `update.sh` would download the latest
+1. Prepare the data to be visualized. [`update.sh`](update.sh) would download the latest
    reports from a locally running PuppetDB, you can point it to a different
    host by exporting the `$url` environment variable. You may want to run this
    periodically.
@@ -31,6 +31,6 @@ How to use
    `ownwer_to_roles` and `permanentConfig` variables to suit your environment.
 
 3. Make a web server serve this repository. You would need to let it follow
-   symbolic links. "test.sh" can be used to try it in a simple Ruby WebRick
+   symbolic links. [`test.sh`](test.sh) can be used to try it in a simple Ruby WebRick
    webserver.
 
